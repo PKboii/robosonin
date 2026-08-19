@@ -1,0 +1,199 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Space Grotesk", "Instrument Sans", sans-serif;
+  --font-body: "Instrument Sans", "Segoe UI", sans-serif;
+
+  --color-paper: #f1f2ef;
+  --color-mist: #e6e8e3;
+  --color-stone: #d6d9d2;
+  --color-ink: #1b1d1f;
+  --color-graphite: #2b2e31;
+  --color-smoke: #6b7069;
+  --color-flame: #e8490f;
+  --color-ember: #b93a0c;
+  --color-warm: #d9a05b;
+  --color-cream: #faf9f6;
+
+  --shadow-plinth: 0 24px 60px -24px rgba(27, 29, 31, 0.28);
+  --shadow-panel: 0 18px 50px -20px rgba(27, 29, 31, 0.35);
+}
+
+html {
+  background: var(--color-paper);
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--color-ink);
+  background: var(--color-paper);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-flame);
+  color: #fff;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-mist);
+}
+::-webkit-scrollbar-thumb {
+  background: #b9beb4;
+  border-radius: 8px;
+  border: 2px solid var(--color-mist);
+}
+
+/* ---------- film grain over the 3D scene ---------- */
+.grain {
+  pointer-events: none;
+  position: fixed;
+  inset: -50%;
+  width: 200%;
+  height: 200%;
+  z-index: 40;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  animation: grain-shift 1.4s steps(4) infinite;
+}
+@keyframes grain-shift {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(-2%, 1.4%); }
+  50% { transform: translate(1.2%, -1.8%); }
+  75% { transform: translate(-1.4%, -0.8%); }
+  100% { transform: translate(0, 0); }
+}
+
+/* ---------- 3D projected part labels ---------- */
+.label3d {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform, opacity;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 20;
+}
+.label3d-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transform: translateY(-50%);
+  white-space: nowrap;
+}
+.label3d-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--color-flame);
+  box-shadow: 0 0 0 4px rgba(232, 73, 15, 0.18);
+  flex: none;
+}
+.label3d-line {
+  width: 44px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(232, 73, 15, 0.85), rgba(27, 29, 31, 0.35));
+  flex: none;
+}
+.label3d-text {
+  background: rgba(250, 249, 246, 0.92);
+  border: 1px solid rgba(27, 29, 31, 0.14);
+  border-left: 2px solid var(--color-flame);
+  padding: 6px 11px 6px 10px;
+  box-shadow: 0 8px 22px -10px rgba(27, 29, 31, 0.35);
+}
+.label3d-name {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  line-height: 1.1;
+}
+.label3d-sub {
+  font-size: 11px;
+  color: var(--color-smoke);
+  margin-top: 2px;
+}
+@media (max-width: 768px) {
+  .label3d-line { width: 22px; }
+  .label3d-sub { display: none; }
+}
+
+/* ---------- copy layer ---------- */
+.copy-block {
+  position: fixed;
+  z-index: 15;
+  opacity: 0;
+  pointer-events: none;
+  will-change: opacity, transform;
+}
+
+/* ---------- zone rail ---------- */
+.rail-dot {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), background 0.3s, color 0.3s, border-color 0.3s;
+}
+.rail-label {
+  transition: opacity 0.3s, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ---------- entrance animations ---------- */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(26px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.rise-in {
+  animation: rise-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.7); opacity: 0.8; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+.scroll-cue-ring {
+  animation: pulse-ring 2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+@keyframes cue-drop {
+  0% { transform: translateY(-8px); opacity: 0; }
+  35% { opacity: 1; }
+  100% { transform: translateY(10px); opacity: 0; }
+}
+.scroll-cue-drop {
+  animation: cue-drop 1.8s ease-in-out infinite;
+}
+
+/* ---------- drawers ---------- */
+.drawer-panel {
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.drawer-backdrop {
+  transition: opacity 0.4s ease;
+}
+
+/* product card image tile fallback */
+.img-tile {
+  background:
+    radial-gradient(120% 90% at 50% 0%, #eceee9 0%, #dde0d9 70%),
+    #dde0d9;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grain,
+  .scroll-cue-ring,
+  .scroll-cue-drop {
+    animation: none;
+  }
+  .rise-in {
+    animation-duration: 0.01s;
+  }
+  .drawer-panel {
+    transition-duration: 0.15s;
+  }
+}
