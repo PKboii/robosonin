@@ -165,6 +165,14 @@ const LABEL_SETS: { zone: string; items: { id: string; name: string; sub: string
     ],
   },
   {
+    zone: "scrubber",
+    items: [
+      { id: "scrub-head", name: "Spin head", sub: "Powerful 25W motor" },
+      { id: "scrub-grip", name: "Grip & battery", sub: "Rechargeable · cordless" },
+      { id: "scrub-brush", name: "Brush heads", sub: "3 interchangeable attachments" },
+    ],
+  },
+  {
     zone: "vacuum",
     items: [
       { id: "vac-nozzle", name: "Nozzle", sub: "Wet & dry pickup" },

@@ -198,6 +198,8 @@ export function buildSpinScrubber(): Build {
   b.spin.push({ obj: headG, speed: 0 }); // speed driven per-frame via extras
 
   anchor(b, "scrub-head", headHousing);
+  anchor(b, "scrub-grip", gripBody);
+  anchor(b, "scrub-brush", brushes[0]);
   return b;
 }
 
@@ -472,11 +474,12 @@ export function buildEvoPump(): Build {
   cupG.add(cup, cupBase);
   g.add(cupG);
 
-  part(b, shellG, [0, 0.19, -0.13]);
-  part(b, flangeG, [0, 0.06, 0.2]);
-  part(b, membraneG, [0, 0.12, 0.1]);
-  part(b, cupG, [0, -0.02, 0.24]);
-  part(b, unitG, [0, 0.02, -0.02]);
+  // ascending exploded column (cup at base → shell on top), stays clear of the bench
+  part(b, cupG, [0, 0.0, 0.15]);
+  part(b, flangeG, [0, 0.1, 0.11]);
+  part(b, membraneG, [0, 0.2, 0.07]);
+  part(b, unitG, [0, 0.3, 0.03]);
+  part(b, shellG, [0, 0.4, -0.02]);
 
   anchor(b, "evo-shell", shell);
   anchor(b, "evo-flange", flange);

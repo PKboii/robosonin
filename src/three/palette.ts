@@ -124,6 +124,72 @@ export function makeSign(
   return plane;
 }
 
+/** Entrance brand board — real Roboson logo on a light plate, with typeset fallback. */
+export function makeBrandBoard(worldW: number): THREE.Mesh {
+  const cw = 1024;
+  const ch = 400;
+  const canvas = document.createElement("canvas");
+  canvas.width = cw;
+  canvas.height = ch;
+  const c = canvas.getContext("2d")!;
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+
+  const spaced = (text: string, cx: number, cy: number, gap: number) => {
+    let w = 0;
+    const ws: number[] = [];
+    for (const chh of text) {
+      const m = c.measureText(chh).width;
+      ws.push(m);
+      w += m + gap;
+    }
+    let x = cx - (w - gap) / 2;
+    for (let i = 0; i < text.length; i++) {
+      c.fillText(text[i], x + ws[i] / 2, cy);
+      x += ws[i] + gap;
+    }
+  };
+
+  let logo: HTMLImageElement | null = null;
+  const draw = () => {
+    c.clearRect(0, 0, cw, ch);
+    c.fillStyle = "#f7f6f2";
+    c.fillRect(0, 0, cw, ch);
+    c.fillStyle = "#e8490f";
+    c.fillRect(0, 0, cw, 12);
+    c.textAlign = "center";
+    c.textBaseline = "middle";
+    if (logo && logo.complete && logo.naturalWidth > 0) {
+      const lw = 460;
+      const lh = Math.min(150, lw * (logo.naturalHeight / logo.naturalWidth));
+      c.drawImage(logo, cw / 2 - lw / 2, ch * 0.36 - lh / 2, lw, lh);
+    } else {
+      c.fillStyle = "#1b1d1f";
+      c.font = '700 118px "Space Grotesk", sans-serif';
+      c.fillText("ROBOSON", cw / 2, ch * 0.35);
+    }
+    c.fillStyle = "#2b2e31";
+    c.font = '600 42px "Space Grotesk", sans-serif';
+    spaced("THE DIGITAL SHOWROOM", cw / 2, ch * 0.76, 16);
+    tex.needsUpdate = true;
+  };
+  draw();
+  if (typeof document !== "undefined" && (document as Document & { fonts?: FontFaceSet }).fonts) {
+    (document as Document & { fonts: FontFaceSet }).fonts.ready.then(draw).catch(() => {});
+  }
+  logo = new Image();
+  logo.crossOrigin = "anonymous";
+  logo.onload = draw;
+  logo.src =
+    "https://roboson.in/cdn/shop/files/Roboson_logo_Website_7fed9a54-32c9-49e4-83f1-d5670c03b85f.png?v=1718196617";
+
+  const mat = new THREE.MeshBasicMaterial({ map: tex });
+  const plane = new THREE.Mesh(new THREE.PlaneGeometry(worldW, (worldW * ch) / cw), mat);
+  plane.userData.disposeExtra = [tex, mat, plane.geometry];
+  return plane;
+}
+
 /** Vertical wood slat feature panel (instanced). */
 export function makeSlats(count: number, height: number, spacing: number): THREE.InstancedMesh {
   const geo = new THREE.BoxGeometry(0.055, height, 0.04);

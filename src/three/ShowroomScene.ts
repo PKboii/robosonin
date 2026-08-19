@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { MAT, disposeMaterials, makePedestal, makeSign, makeSlats, mesh } from "./palette";
+import { MAT, disposeMaterials, makeBrandBoard, makePedestal, makeSign, makeSlats, mesh } from "./palette";
 import {
   buildSpinMop,
   buildSpinScrubber,
@@ -8,7 +8,6 @@ import {
   buildSteamer,
   buildHotAirBrush,
   buildEvoPump,
-  buildBP111,
   buildBP222,
   buildShirtOnHanger,
   type Build,
@@ -50,8 +49,8 @@ const KEYS: CamKey[] = [
   { t: 0.7, p: [-1.65, 1.0, -15.6], l: [-2.85, 0.32, -16.4] },
   { t: 0.755, p: [0.85, 1.3, -19.0], l: [2.6, 1.05, -21.2] },
   { t: 0.815, p: [1.55, 1.15, -20.4], l: [2.55, 1.0, -21.3] },
-  { t: 0.858, p: [-0.45, 1.3, -23.5], l: [-3.3, 0.78, -25.95] },
-  { t: 0.915, p: [-1.5, 0.88, -24.5], l: [-3.3, 0.72, -25.98] },
+  { t: 0.858, p: [-0.45, 1.55, -23.4], l: [-3.3, 1.08, -25.95] },
+  { t: 0.915, p: [-1.4, 1.32, -24.4], l: [-3.3, 1.02, -25.98] },
   { t: 1.0, p: [0, 3.75, -32.6], l: [0, 0.9, -12] },
 ];
 
@@ -226,44 +225,18 @@ export class ShowroomScene {
       }
     }
 
-    // entrance portal
+    // entrance portal — white frame with the Roboson brand board above the opening
     const jambGeo = new THREE.BoxGeometry(0.28, 3.5, 0.7);
-    const jambL = mesh(jambGeo, MAT.graphite, -1.7, 1.75, 8);
-    const jambR = mesh(jambGeo, MAT.graphite, 1.7, 1.75, 8);
-    const header = mesh(new THREE.BoxGeometry(3.68, 0.32, 0.7), MAT.graphite, 0, 3.66, 8);
-    this.scene.add(jambL, jambR, header);
-    // real Roboson logo on the portal header (falls back to a typeset plate)
-    const logoMat = new THREE.MeshBasicMaterial({ transparent: true });
-    const logoPlane = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 0.5), logoMat);
-    logoPlane.position.set(0, 3.66, 8.37);
-    logoPlane.userData.disposeExtra = [logoMat, logoPlane.geometry];
-    this.scene.add(logoPlane);
-    const loader = new THREE.TextureLoader();
-    loader.setCrossOrigin("anonymous");
-    loader.load(
-      "https://roboson.in/cdn/shop/files/Roboson_logo_Website_7fed9a54-32c9-49e4-83f1-d5670c03b85f.png?v=1718196617",
-      (tex) => {
-        if (this.disposed) {
-          tex.dispose();
-          return;
-        }
-        tex.colorSpace = THREE.SRGBColorSpace;
-        tex.anisotropy = 4;
-        logoMat.map = tex;
-        logoMat.needsUpdate = true;
-        logoPlane.userData.disposeExtra.push(tex);
-      },
-      undefined,
-      () => {
-        if (this.disposed) return;
-        const s = makeSign("ROBOSON", "THE DIGITAL SHOWROOM", 2.4, { align: "center" });
-        s.position.copy(logoPlane.position);
-        this.scene.add(s);
-      }
-    );
-    const portalTag = makeSign("THE DIGITAL SHOWROOM", "EVERYDAY MADE EASIER", 2.0, { align: "center" });
-    portalTag.position.set(0, 3.22, 8.36);
-    this.scene.add(portalTag);
+    const jambL = mesh(jambGeo, MAT.white, -1.7, 1.75, 8);
+    const jambR = mesh(jambGeo, MAT.white, 1.7, 1.75, 8);
+    jambL.receiveShadow = jambR.receiveShadow = true;
+    const header = mesh(new THREE.BoxGeometry(3.68, 0.32, 0.7), MAT.white, 0, 3.66, 8);
+    header.receiveShadow = true;
+    const threshold = mesh(new THREE.BoxGeometry(3.68, 0.03, 0.74), MAT.graphite, 0, 0.015, 8, false);
+    this.scene.add(jambL, jambR, header, threshold);
+    const brand = makeBrandBoard(2.9);
+    brand.position.set(0, 3.66, 8.37);
+    this.scene.add(brand);
 
     // floor guide spine + ticks
     const spine = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.005, 41), MAT.accent);
@@ -295,7 +268,7 @@ export class ShowroomScene {
     const s2 = makeSign("FABRIC CARE STUDIO", "Garment Steamer · Hot Air Brush", 2.3);
     s2.position.set(-5.44, 2.1, -19.6);
     s2.rotation.y = Math.PI / 2;
-    const s3 = makeSign("MOTHER & BABY STUDIO", "Evo · BP-222 · BP-111", 2.3);
+    const s3 = makeSign("MOTHER & BABY STUDIO", "Evo · BP-222", 2.3);
     s3.position.set(-5.44, 2.1, -23.1);
     s3.rotation.y = Math.PI / 2;
     this.scene.add(s1, s2, s3);
@@ -311,7 +284,10 @@ export class ShowroomScene {
     evoSign.position.set(-3.3, 2.4, -26.5);
     this.scene.add(nicheBack, bench, benchTop, riser, evoSign);
 
-    // garment rail + shirt on a wire hanger
+    // garment rail + shirt on a wire hanger, against a charcoal fabric-care backdrop
+    const fabricBack = mesh(new THREE.BoxGeometry(1.7, 2.4, 0.05), MAT.graphite, 2.7, 1.2, -22.32);
+    fabricBack.receiveShadow = true;
+    this.scene.add(fabricBack);
     const poleGeo = new THREE.CylinderGeometry(0.013, 0.013, 1.78, 10);
     const poleL = mesh(poleGeo, MAT.darkMetal, 2.26, 0.89, -21.78);
     const poleR = mesh(poleGeo, MAT.darkMetal, 3.14, 0.89, -21.78);
@@ -432,16 +408,12 @@ export class ShowroomScene {
     evo.group.rotation.y = 1.05;
     evo.group.rotation.x = -0.18;
 
-    const bp111Bench = buildBP111();
-    bp111Bench.group.scale.setScalar(1.7);
-    this.place("bp111", bp111Bench, -4.02, 0.515, -25.75);
-    bp111Bench.group.rotation.y = 0.62;
     const bp222Bench = buildBP222();
-    bp222Bench.group.scale.setScalar(1.7);
-    this.place("bp222", bp222Bench, -2.4, 0.515, -25.75);
-    bp222Bench.group.rotation.y = -0.62;
-    this.plinthSign("BP-111", "₹3,299 · 3 modes · 9 levels", 0.56, -4.02, 0.8, -25.32);
-    this.plinthSign("BP-222", "₹4,299 · hands-free", 0.56, -2.4, 0.8, -25.32);
+    bp222Bench.group.scale.setScalar(1.6);
+    this.place("bp222", bp222Bench, -2.32, 0.515, -26.02);
+    bp222Bench.group.rotation.y = -0.5;
+    // BP-222 price card sits low on the bench, clear of Evo's forward explode corridor
+    this.plinthSign("BP-222", "₹4,299 · hands-free", 0.5, -2.32, 0.63, -25.72);
 
     // 7 — Finale shelf pedestals
     const pedHab = makePedestal(0.56, 1.0, 0.56);
@@ -453,7 +425,7 @@ export class ShowroomScene {
 
     // label anchors
     const map: [string, string][] = [
-      ["mop", "mop"], ["vac", "vacuum"], ["evo", "evo"],
+      ["mop", "mop"], ["scrub", "scrubber"], ["vac", "vacuum"], ["evo", "evo"],
     ];
     for (const [key, zone] of map) {
       for (const a of this.builds[key].anchors) {
@@ -512,7 +484,7 @@ export class ShowroomScene {
         void main() {
           vAlpha = aAlpha;
           vec4 mv = modelViewMatrix * vec4(position, 1.0);
-          gl_PointSize = aSize * (140.0 / max(0.1, -mv.z));
+          gl_PointSize = min(70.0, aSize * (300.0 / max(0.1, -mv.z)));
           gl_Position = projectionMatrix * mv;
         }
       `,
@@ -604,6 +576,7 @@ export class ShowroomScene {
       }
       const f = smooth(0.5, 0.66, uScrub) * (1 - smooth(0.82, 0.94, uScrub));
       this.applyExplode("scrub", f);
+      this.labelAlpha = { zone: "scrubber", a: smooth(0.5, 0.9, f) };
     } else {
       this.applyExplode("scrub", 0);
     }
@@ -710,7 +683,7 @@ export class ShowroomScene {
           this.steamVel[i * 3] = (Math.random() - 0.5) * 0.06;
           this.steamVel[i * 3 + 1] = 0.22 + Math.random() * 0.16;
           this.steamVel[i * 3 + 2] = (Math.random() - 0.78) * 0.08;
-          this.steamSize[i] = 11 + Math.random() * 15;
+          this.steamSize[i] = 0.05 + Math.random() * 0.06;
         }
         i++;
       }
@@ -732,8 +705,8 @@ export class ShowroomScene {
         this.steamPos[i * 3] += this.steamVel[i * 3] * dt;
         this.steamPos[i * 3 + 1] += this.steamVel[i * 3 + 1] * dt;
         this.steamPos[i * 3 + 2] += this.steamVel[i * 3 + 2] * dt;
-        this.steamAlpha[i] = Math.sin(Math.PI * t) * 0.28;
-        this.steamSize[i] += 9 * dt;
+        this.steamAlpha[i] = Math.sin(Math.PI * t) * 0.24;
+        this.steamSize[i] += 0.085 * dt;
       }
     }
     (this.steamGeo.attributes.position as THREE.BufferAttribute).needsUpdate = true;
