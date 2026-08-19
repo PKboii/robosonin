@@ -8,7 +8,9 @@ import {
   buildSteamer,
   buildHotAirBrush,
   buildEvoPump,
-  buildPumpSimple,
+  buildBP111,
+  buildBP222,
+  buildShirtOnHanger,
   type Build,
 } from "./builders";
 
@@ -48,8 +50,8 @@ const KEYS: CamKey[] = [
   { t: 0.7, p: [-1.65, 1.0, -15.6], l: [-2.85, 0.32, -16.4] },
   { t: 0.755, p: [0.85, 1.3, -19.0], l: [2.6, 1.05, -21.2] },
   { t: 0.815, p: [1.55, 1.15, -20.4], l: [2.55, 1.0, -21.3] },
-  { t: 0.875, p: [-0.55, 1.3, -23.6], l: [-3.3, 0.8, -25.95] },
-  { t: 0.93, p: [-2.1, 0.85, -25.0], l: [-3.3, 0.74, -25.95] },
+  { t: 0.858, p: [-0.45, 1.3, -23.5], l: [-3.3, 0.78, -25.95] },
+  { t: 0.915, p: [-1.5, 0.88, -24.5], l: [-3.3, 0.72, -25.98] },
   { t: 1.0, p: [0, 3.75, -32.6], l: [0, 0.9, -12] },
 ];
 
@@ -90,7 +92,7 @@ export class ShowroomScene {
   private baseY: Record<string, number> = {};
 
   private steamerHome = new THREE.Vector3(2.45, 0.752, -20.8);
-  private steamerNear = new THREE.Vector3(2.6, 0.8, -21.22);
+  private steamerNear = new THREE.Vector3(2.62, 0.85, -21.4);
 
   private dust!: THREE.Points;
   private dustVel: Float32Array = new Float32Array(0);
@@ -110,9 +112,10 @@ export class ShowroomScene {
   private steamAcc = 0;
   private steamMat!: THREE.ShaderMaterial;
 
-  // fabric
-  private fabric!: THREE.Mesh;
-  private fabricBase!: Float32Array;
+  // shirt on hanger
+  private shirt!: THREE.Mesh;
+  private shirtBase!: Float32Array;
+  private shirtH = 0.62;
 
   private labels: { id: string; obj: THREE.Object3D; zone: string }[] = [];
   private tmpV = new THREE.Vector3();
@@ -229,9 +232,38 @@ export class ShowroomScene {
     const jambR = mesh(jambGeo, MAT.graphite, 1.7, 1.75, 8);
     const header = mesh(new THREE.BoxGeometry(3.68, 0.32, 0.7), MAT.graphite, 0, 3.66, 8);
     this.scene.add(jambL, jambR, header);
-    const portalSign = makeSign("ROBOSON", "THE DIGITAL SHOWROOM", 2.7, { align: "center" });
-    portalSign.position.set(0, 3.66, 8.36);
-    this.scene.add(portalSign);
+    // real Roboson logo on the portal header (falls back to a typeset plate)
+    const logoMat = new THREE.MeshBasicMaterial({ transparent: true });
+    const logoPlane = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 0.5), logoMat);
+    logoPlane.position.set(0, 3.66, 8.37);
+    logoPlane.userData.disposeExtra = [logoMat, logoPlane.geometry];
+    this.scene.add(logoPlane);
+    const loader = new THREE.TextureLoader();
+    loader.setCrossOrigin("anonymous");
+    loader.load(
+      "https://roboson.in/cdn/shop/files/Roboson_logo_Website_7fed9a54-32c9-49e4-83f1-d5670c03b85f.png?v=1718196617",
+      (tex) => {
+        if (this.disposed) {
+          tex.dispose();
+          return;
+        }
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.anisotropy = 4;
+        logoMat.map = tex;
+        logoMat.needsUpdate = true;
+        logoPlane.userData.disposeExtra.push(tex);
+      },
+      undefined,
+      () => {
+        if (this.disposed) return;
+        const s = makeSign("ROBOSON", "THE DIGITAL SHOWROOM", 2.4, { align: "center" });
+        s.position.copy(logoPlane.position);
+        this.scene.add(s);
+      }
+    );
+    const portalTag = makeSign("THE DIGITAL SHOWROOM", "EVERYDAY MADE EASIER", 2.0, { align: "center" });
+    portalTag.position.set(0, 3.22, 8.36);
+    this.scene.add(portalTag);
 
     // floor guide spine + ticks
     const spine = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.005, 41), MAT.accent);
@@ -268,32 +300,31 @@ export class ShowroomScene {
     s3.rotation.y = Math.PI / 2;
     this.scene.add(s1, s2, s3);
 
-    // evo alcove
-    const nicheBack = mesh(new THREE.BoxGeometry(2.7, 3.1, 0.16), MAT.wallWarm, -3.3, 1.55, -26.6, false);
+    // evo alcove — open front, warm back panel, one long oak bench for all three pumps
+    const nicheBack = mesh(new THREE.BoxGeometry(3.0, 3.1, 0.16), MAT.wallWarm, -3.3, 1.55, -26.6, false);
     nicheBack.receiveShadow = true;
-    const nicheL = mesh(new THREE.BoxGeometry(0.16, 3.1, 1.7), MAT.wallWarm, -4.58, 1.55, -25.83, false);
-    const nicheR = mesh(new THREE.BoxGeometry(0.16, 3.1, 1.7), MAT.wallWarm, -2.02, 1.55, -25.83, false);
-    nicheL.receiveShadow = nicheR.receiveShadow = true;
-    const bench = mesh(new THREE.BoxGeometry(1.6, 0.5, 0.8), MAT.oakLight, -3.3, 0.25, -26.05);
+    const bench = mesh(new THREE.BoxGeometry(2.3, 0.5, 0.8), MAT.oakLight, -3.3, 0.25, -26.05);
     bench.receiveShadow = true;
-    const riser = mesh(new THREE.CylinderGeometry(0.15, 0.16, 0.06, 28), MAT.woodDark, -3.3, 0.53, -25.98);
-    const evoSign = makeSign("EVO — 3RD GENERATION", "India's slimmest & most advanced", 1.5);
+    const benchTop = mesh(new THREE.BoxGeometry(2.3, 0.014, 0.8), MAT.woodDark, -3.3, 0.507, -26.05, false);
+    const riser = mesh(new THREE.CylinderGeometry(0.15, 0.16, 0.06, 28), MAT.woodDark, -3.3, 0.545, -25.98);
+    const evoSign = makeSign("EVO — 3RD GENERATION", "India's slimmest & most advanced", 1.7);
     evoSign.position.set(-3.3, 2.4, -26.5);
-    this.scene.add(nicheBack, nicheL, nicheR, bench, riser, evoSign);
+    this.scene.add(nicheBack, bench, benchTop, riser, evoSign);
 
-    // garment rail + fabric
+    // garment rail + shirt on a wire hanger
     const poleGeo = new THREE.CylinderGeometry(0.013, 0.013, 1.78, 10);
     const poleL = mesh(poleGeo, MAT.darkMetal, 2.26, 0.89, -21.78);
     const poleR = mesh(poleGeo, MAT.darkMetal, 3.14, 0.89, -21.78);
     const bar = mesh(new THREE.BoxGeometry(0.94, 0.022, 0.022), MAT.darkMetal, 2.7, 1.77, -21.78);
     this.scene.add(poleL, poleR, bar);
 
-    const fabGeo = new THREE.PlaneGeometry(0.95, 1.55, 20, 28);
-    this.fabric = new THREE.Mesh(fabGeo, MAT.fabric);
-    this.fabric.position.set(2.7, 0.985, -21.78);
-    this.fabric.castShadow = true;
-    this.fabricBase = Float32Array.from((fabGeo.attributes.position.array as Float32Array));
-    this.scene.add(this.fabric);
+    const hang = buildShirtOnHanger();
+    hang.group.position.set(2.7, 1.085, -21.78);
+    this.scene.add(hang.group);
+    this.shirt = hang.shirt;
+    this.shirtBase = Float32Array.from(
+      (this.shirt.geometry.attributes.position.array as Float32Array)
+    );
   }
 
   /* ---------------- product vignettes ---------------- */
@@ -361,7 +392,7 @@ export class ShowroomScene {
     }
     this.scene.add(platform, deck, seatBase, seatBack, mat);
     const carVac = buildCarVacuum();
-    this.place("carvac", carVac, -2.72, 0.135, -16.38);
+    this.place("carvac", carVac, -2.72, 0.258, -16.38);
     carVac.group.rotation.y = 0.45;
     this.plinthSign("VC101 CAR VACUUM", "₹1,499 · 4.5m cord", 0.62, -3.05, 0.075, -15.6);
 
@@ -394,12 +425,23 @@ export class ShowroomScene {
     steamer.group.rotation.y = 0.55;
     this.plinthSign("GARMENT STEAMER", "₹2,499 · 1800W", 0.58, 2.45, 0.42, -20.53);
 
-    // 6 — Evo pump in alcove
+    // 6 — Mother & baby bench: Evo hero on the riser, BP-111 and BP-222 beside it
     const evo = buildEvoPump();
     evo.group.scale.setScalar(2.3);
     this.place("evo", evo, -3.3, 0.575, -25.98);
     evo.group.rotation.y = 1.05;
     evo.group.rotation.x = -0.18;
+
+    const bp111Bench = buildBP111();
+    bp111Bench.group.scale.setScalar(1.7);
+    this.place("bp111", bp111Bench, -4.02, 0.515, -25.75);
+    bp111Bench.group.rotation.y = 0.62;
+    const bp222Bench = buildBP222();
+    bp222Bench.group.scale.setScalar(1.7);
+    this.place("bp222", bp222Bench, -2.4, 0.515, -25.75);
+    bp222Bench.group.rotation.y = -0.62;
+    this.plinthSign("BP-111", "₹3,299 · 3 modes · 9 levels", 0.56, -4.02, 0.8, -25.32);
+    this.plinthSign("BP-222", "₹4,299 · hands-free", 0.56, -2.4, 0.8, -25.32);
 
     // 7 — Finale shelf pedestals
     const pedHab = makePedestal(0.56, 1.0, 0.56);
@@ -408,22 +450,6 @@ export class ShowroomScene {
     const hab = buildHotAirBrush();
     this.place("hab", hab, 3.15, 1.012, -24.6);
     this.plinthSign("HOT AIR BRUSH", "₹1,899 · 3-in-1", 0.5, 3.15, 0.55, -24.31);
-
-    const pedBp1 = makePedestal(0.52, 0.88, 0.52);
-    pedBp1.position.set(-3.25, 0, -29.3);
-    this.scene.add(pedBp1);
-    const bp111 = buildPumpSimple("box");
-    this.place("bp111", bp111, -3.25, 0.892, -29.3);
-    bp111.group.rotation.y = 0.6;
-    this.plinthSign("BP-111", "₹3,299", 0.42, -3.25, 0.48, -29.03);
-
-    const pedBp2 = makePedestal(0.52, 0.88, 0.52);
-    pedBp2.position.set(3.15, 0, -29.3);
-    this.scene.add(pedBp2);
-    const bp222 = buildPumpSimple("puck");
-    this.place("bp222", bp222, 3.15, 0.892, -29.3);
-    bp222.group.rotation.y = -0.6;
-    this.plinthSign("BP-222", "₹4,299", 0.42, 3.15, 0.48, -29.03);
 
     // label anchors
     const map: [string, string][] = [
@@ -561,7 +587,7 @@ export class ShowroomScene {
       this.labelAlpha = { zone: "mop", a: smooth(0.55, 0.9, f) };
     }
 
-    /* Scrubber — brush swap cycle */
+    /* Scrubber — brushes swap & spin, then the handle explodes into stages */
     const uScrub = this.zoneU("scrub", 0.36, 0.5);
     if (uScrub >= 0) {
       const b = this.builds.scrub;
@@ -569,13 +595,17 @@ export class ShowroomScene {
         const brush = b.extras[`brush${i}`];
         const home = b.extras[`brush${i}Home`].position;
         const park = b.extras[`brush${i}Park`].position;
-        const start = i / 3;
-        const end = (i + 1) / 3;
+        const start = i * 0.15;
+        const end = start + 0.15;
         const attach =
-          smooth(start + 0.02, start + 0.12, uScrub) * (1 - smooth(end - 0.02, end + 0.08, uScrub));
+          smooth(start + 0.02, start + 0.1, uScrub) * (1 - smooth(end - 0.02, end + 0.06, uScrub));
         brush.position.lerpVectors(park, home, ease(attach));
         brush.rotation.y += 9 * Math.max(0, attach - 0.85) * dt * 6.6;
       }
+      const f = smooth(0.5, 0.66, uScrub) * (1 - smooth(0.82, 0.94, uScrub));
+      this.applyExplode("scrub", f);
+    } else {
+      this.applyExplode("scrub", 0);
     }
 
     /* VC201 — engineering reveal */
@@ -621,28 +651,28 @@ export class ShowroomScene {
     }
     this.updateSteam(dt, emit);
 
-    // fabric waves relax while steaming
+    // shirt wrinkles ripple gently, then relax under steam
     const relax = uSteam >= 0 ? 1 - 0.85 * smooth(0.25, 0.8, uSteam) : 1;
     const amp = (this.opts.reducedMotion ? 0.4 : 1) * relax;
-    const attr = this.fabric.geometry.attributes.position as THREE.BufferAttribute;
+    const attr = this.shirt.geometry.attributes.position as THREE.BufferAttribute;
     for (let i = 0; i < attr.count; i++) {
-      const x = this.fabricBase[i * 3];
-      const y = this.fabricBase[i * 3 + 1];
-      const low = (0.775 - y) / 1.55 + 0.15;
+      const x = this.shirtBase[i * 3];
+      const y = this.shirtBase[i * 3 + 1];
+      const low = (this.shirtH - y) / this.shirtH + 0.12; // hem moves most
       const z =
-        (Math.sin(x * 9 + this.time * 1.6 + y * 3) * 0.032 +
-          Math.sin(y * 5.5 - this.time * 1.1) * 0.022) *
+        (Math.sin(x * 14 + this.time * 1.7 + y * 4) * 0.02 +
+          Math.sin(y * 7 - this.time * 1.2 + x * 5) * 0.014) *
         low *
         amp;
       attr.setZ(i, z);
     }
     attr.needsUpdate = true;
-    this.fabric.geometry.computeVertexNormals();
+    this.shirt.geometry.computeVertexNormals();
 
-    /* Evo — gentle medical-grade reveal */
-    const uEvo = this.zoneU("evo", 0.84, 0.95);
+    /* Evo — gentle medical-grade reveal, held longer for the component study */
+    const uEvo = this.zoneU("evo", 0.82, 0.965);
     if (uEvo >= 0) {
-      const f = smooth(0.3, 0.5, uEvo) * (1 - smooth(0.72, 0.88, uEvo));
+      const f = smooth(0.2, 0.34, uEvo) * (1 - smooth(0.78, 0.93, uEvo));
       this.applyExplode("evo", f);
       if (this.labelAlpha.zone !== "mop" && this.labelAlpha.zone !== "vacuum")
         this.labelAlpha = { zone: "evo", a: smooth(0.5, 0.85, f) };
@@ -652,7 +682,7 @@ export class ShowroomScene {
     }
 
     /* Finale — warmer light */
-    const w = smooth(0.95, 0.995, this.p);
+    const w = smooth(0.965, 0.998, this.p);
     this.dirLight.color.lerpColors(this.coolColor, this.warmColor, w);
     this.hemi.intensity = 0.85 + 0.22 * w;
     this.renderer.toneMappingExposure = 1.02 + 0.1 * w;
@@ -665,7 +695,7 @@ export class ShowroomScene {
     const n = this.steamN;
     // spawn
     if (emit > 0) {
-      this.steamAcc += dt * 55 * emit;
+      this.steamAcc += dt * 42 * emit;
       const head = this.builds.steamer.extras.steamHead;
       head.getWorldPosition(this.tmpV2);
       let i = 0;
@@ -679,8 +709,8 @@ export class ShowroomScene {
           this.steamPos[i * 3 + 2] = this.tmpV2.z + (Math.random() - 0.5) * 0.05;
           this.steamVel[i * 3] = (Math.random() - 0.5) * 0.06;
           this.steamVel[i * 3 + 1] = 0.22 + Math.random() * 0.16;
-          this.steamVel[i * 3 + 2] = (Math.random() - 0.5) * 0.06;
-          this.steamSize[i] = 14 + Math.random() * 20;
+          this.steamVel[i * 3 + 2] = (Math.random() - 0.78) * 0.08;
+          this.steamSize[i] = 11 + Math.random() * 15;
         }
         i++;
       }
@@ -702,7 +732,7 @@ export class ShowroomScene {
         this.steamPos[i * 3] += this.steamVel[i * 3] * dt;
         this.steamPos[i * 3 + 1] += this.steamVel[i * 3 + 1] * dt;
         this.steamPos[i * 3 + 2] += this.steamVel[i * 3 + 2] * dt;
-        this.steamAlpha[i] = Math.sin(Math.PI * t) * 0.42;
+        this.steamAlpha[i] = Math.sin(Math.PI * t) * 0.28;
         this.steamSize[i] += 9 * dt;
       }
     }
@@ -784,8 +814,8 @@ export class ShowroomScene {
       : this.p < 0.5 ? "scrubber"
       : this.p < 0.62 ? "vacuum"
       : this.p < 0.73 ? "carvac"
-      : this.p < 0.84 ? "steamer"
-      : this.p < 0.95 ? "evo"
+      : this.p < 0.82 ? "steamer"
+      : this.p < 0.965 ? "evo"
       : "finale";
     if (zid !== this.zone) {
       this.zone = zid;

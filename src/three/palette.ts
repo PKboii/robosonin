@@ -109,11 +109,11 @@ export function makeSign(
   c.textAlign = (opts.align ?? "left") as CanvasTextAlign;
   const tx = opts.align === "center" ? cw / 2 : 78;
   c.font = `700 ${Math.round(ch * (sub ? 0.3 : 0.4))}px "Space Grotesk", sans-serif`;
-  c.fillText(title, tx, ch * (sub ? 0.36 : 0.3));
+  c.fillText(title, tx, ch * (sub ? 0.34 : 0.3));
   if (sub) {
-    c.fillStyle = "#a7aba4";
-    c.font = `500 ${Math.round(ch * 0.15)}px "Instrument Sans", sans-serif`;
-    c.fillText(sub, tx, ch * 0.74);
+    c.fillStyle = "#ffb387";
+    c.font = `600 ${Math.round(ch * 0.175)}px "Space Grotesk", sans-serif`;
+    c.fillText(sub, tx, ch * 0.72);
   }
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;

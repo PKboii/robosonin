@@ -1,5 +1,5 @@
 import type { RefObject } from "react";
-import { ZONES, formatINR, productById, type Product } from "../data/products";
+import { REAL_STORE, ZONES, formatINR, productById, type Product } from "../data/products";
 
 /* ---------------- Intro ---------------- */
 
@@ -10,20 +10,19 @@ export function IntroOverlay({ refEl }: { refEl: RefObject<HTMLDivElement> }) {
       className="pointer-events-none fixed inset-0 z-[45] flex flex-col items-center justify-center bg-paper transition-opacity duration-1000"
     >
       <div className="rise-in flex flex-col items-center px-6 text-center">
-        <svg width="54" height="54" viewBox="0 0 32 32">
-          <rect width="32" height="32" rx="7" fill="#1b1d1f" />
-          <circle cx="16" cy="16" r="8.5" fill="none" stroke="#e8490f" strokeWidth="3" />
-          <circle cx="16" cy="16" r="2.4" fill="#f1f2ef" />
-        </svg>
+        <img
+          src={REAL_STORE.logo}
+          alt="Roboson"
+          className="h-12 w-auto md:h-16"
+        />
         <p className="mt-6 font-display text-[11px] font-semibold tracking-[0.4em] text-flame">
           THE DIGITAL SHOWROOM
         </p>
-        <h1 className="mt-3 font-display text-5xl font-bold tracking-tight text-ink md:text-7xl">
-          ROBOSON
+        <h1 className="mt-3 font-display text-3xl font-bold tracking-tight text-ink md:text-4xl">
+          Designed for everyday life.
         </h1>
         <p className="mt-4 max-w-sm font-body text-base text-smoke">
-          Designed for everyday life. Walk in, watch the products open up, and shop without
-          leaving the room.
+          Walk in, watch the products open up, and shop without leaving the room.
         </p>
         <div className="mt-12 flex flex-col items-center gap-3">
           <div className="relative flex h-11 w-7 items-start justify-center rounded-full border-2 border-ink/30 p-1.5">
@@ -122,12 +121,15 @@ export function ProductPanel({
           <p className="font-display text-[10px] font-semibold tracking-[0.2em] text-flame">
             {zone.kicker.split("—")[1]?.trim().toUpperCase() ?? product.category.toUpperCase()}
           </p>
-          <h3 className="mt-0.5 truncate font-display text-[15px] font-bold text-ink md:text-base">
+          <h3 className="mt-1 line-clamp-2 font-display text-[15px] font-bold leading-snug text-ink md:text-base">
             {product.name}
           </h3>
-          <p className="mt-1 flex items-baseline gap-2">
-            <span className="font-display text-lg font-bold text-ink">{formatINR(product.price)}</span>
+          <p className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <span className="font-display text-xl font-bold text-flame">{formatINR(product.price)}</span>
             <span className="text-xs text-smoke line-through">{formatINR(product.compareAt)}</span>
+            <span className="rounded-full bg-flame/10 px-1.5 py-0.5 font-display text-[10px] font-bold text-ember">
+              {Math.round((1 - product.price / product.compareAt) * 100)}% OFF
+            </span>
           </p>
           <div className="mt-2.5 flex gap-2">
             <button

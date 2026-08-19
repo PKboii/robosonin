@@ -326,17 +326,17 @@ export const ZONES: Zone[] = [
     title: "Steam, ready in 15 seconds.",
     sub: "1800W · up to 32g/min · 220ml tank",
     t0: 0.73,
-    t1: 0.84,
+    t1: 0.82,
     productId: "steamer",
   },
   {
     id: "evo",
-    rail: "Evo",
+    rail: "Mother & Baby",
     kicker: "03 — Mother & baby studio",
     title: "Evo. Third generation.",
-    sub: "India's slimmest & most advanced wearable breast pump",
-    t0: 0.84,
-    t1: 0.95,
+    sub: "India's slimmest & most advanced — with BP-222 and BP-111 beside it",
+    t0: 0.82,
+    t1: 0.965,
     productId: "evo-maroon",
   },
   {
@@ -345,7 +345,7 @@ export const ZONES: Zone[] = [
     kicker: "The full collection",
     title: "Choose what fits your day.",
     sub: "Everyday made easier",
-    t0: 0.95,
+    t0: 0.965,
     t1: 1.0,
   },
 ];
@@ -354,6 +354,7 @@ export const zoneAt = (p: number): Zone =>
   ZONES.find((z) => p >= z.t0 && p < z.t1) ?? ZONES[ZONES.length - 1];
 
 export const REAL_STORE = {
+  logo: "https://roboson.in/cdn/shop/files/Roboson_logo_Website_7fed9a54-32c9-49e4-83f1-d5670c03b85f.png?v=1718196617",
   home: "https://roboson.in/",
   shopAll: "https://roboson.in/collections/all-products",
   breastPumps: "https://roboson.in/collections/electric-breast-pump",

@@ -22,20 +22,20 @@ export default function Header({ cartCount, compact, onCart, onJump, onTop }: Pr
     >
       <button
         onClick={onTop}
-        className="group flex items-center gap-2.5"
+        className="group flex items-center gap-3"
         aria-label="Roboson — back to entrance"
       >
-        <svg width={compact ? 22 : 28} height={compact ? 22 : 28} viewBox="0 0 32 32" className="transition-all duration-500">
-          <rect width="32" height="32" rx="7" fill="#1b1d1f" />
-          <circle cx="16" cy="16" r="8.5" fill="none" stroke="#e8490f" strokeWidth="3" />
-          <circle cx="16" cy="16" r="2.4" fill="#f1f2ef" />
-        </svg>
+        <img
+          src={REAL_STORE.logo}
+          alt="Roboson"
+          className={`w-auto transition-all duration-500 ${compact ? "h-6" : "h-7 md:h-8"}`}
+        />
         <span
-          className={`font-display font-bold tracking-[0.22em] text-ink transition-all duration-500 ${
-            compact ? "text-sm" : "text-base md:text-lg"
+          className={`hidden border-l border-ink/15 pl-3 font-display font-semibold tracking-[0.28em] text-graphite transition-all duration-500 sm:block ${
+            compact ? "text-[9px]" : "text-[10px]"
           }`}
         >
-          ROBOSON
+          THE DIGITAL SHOWROOM
         </span>
       </button>
 
@@ -47,7 +47,7 @@ export default function Header({ cartCount, compact, onCart, onJump, onTop }: Pr
           Showroom
         </button>
         <button
-          onClick={() => onJump(0.965)}
+          onClick={() => onJump(0.978)}
           className="rounded-full px-4 py-2 font-display text-[13px] font-medium tracking-wide text-graphite transition hover:bg-ink hover:text-cream"
         >
           Shop

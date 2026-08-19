@@ -115,26 +115,46 @@ export function buildSpinScrubber(): Build {
   const b = newBuild();
   const g = b.group;
 
-  // body axis vertical; head at bottom
+  // head housing — brushes attach underneath at y ≈ 0
+  const headG = new THREE.Group();
   const headHousing = mesh(new THREE.CylinderGeometry(0.052, 0.058, 0.055, 24), MAT.graphite, 0, 0.075, 0);
+  const headCap = mesh(new THREE.CylinderGeometry(0.03, 0.052, 0.02, 24), MAT.darkSoft, 0, 0.045, 0, false);
+  headG.add(headHousing, headCap);
+  g.add(headG);
+
+  const neckG = new THREE.Group();
   const neck = mesh(new THREE.SphereGeometry(0.045, 20, 14), MAT.white, 0, 0.13, 0);
+  neckG.add(neck);
+  g.add(neckG);
+
+  const shaftG = new THREE.Group();
   const shaft = mesh(new THREE.CylinderGeometry(0.019, 0.019, 0.24, 16), MAT.white, 0, 0.27, 0);
   const midRing = mesh(new THREE.CylinderGeometry(0.023, 0.023, 0.035, 16), MAT.accent, 0, 0.2, 0);
+  shaftG.add(shaft, midRing);
+  g.add(shaftG);
+
+  const gripG = new THREE.Group();
   const gripBody = mesh(new THREE.CapsuleGeometry(0.03, 0.12, 6, 14), MAT.graphite, 0, 0.44, 0);
   const btn = mesh(new THREE.BoxGeometry(0.02, 0.03, 0.012), MAT.accent, 0, 0.42, 0.03);
-  g.add(headHousing, neck, shaft, midRing, gripBody, btn);
+  const hang = mesh(new THREE.TorusGeometry(0.014, 0.004, 8, 14), MAT.darkMetal, 0, 0.525, 0, false);
+  gripG.add(gripBody, btn, hang);
+  g.add(gripG);
 
-  // brush dock rack (attached to presentation, lives in group space)
+  // slim accessory dock — on the pedestal's back-left corner, clear of the camera path
   const rack = new THREE.Group();
-  rack.position.set(0.34, 0, 0);
-  const rackPlate = mesh(new THREE.BoxGeometry(0.02, 0.3, 0.34), MAT.oakLight, 0, 0.18, 0);
-  rack.add(rackPlate);
+  rack.position.set(-0.34, 0, -0.26);
+  const rackPlate = mesh(new THREE.BoxGeometry(0.018, 0.3, 0.3), MAT.graphite, 0, 0.18, 0, false);
+  const stem = mesh(new THREE.CylinderGeometry(0.008, 0.01, 0.07, 10), MAT.darkMetal, 0, 0.005, 0, false);
+  const foot = mesh(new THREE.CylinderGeometry(0.05, 0.056, 0.012, 16), MAT.darkMetal, 0, -0.02, 0, false);
+  rack.add(rackPlate, stem, foot);
+  const pegYs = [0.26, 0.17, 0.08];
   for (let i = 0; i < 3; i++) {
-    const peg = mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.09, 10), MAT.darkMetal, -0.05, 0.2 - i * 0.09, (i - 1) * 0.1);
+    const peg = mesh(new THREE.CylinderGeometry(0.007, 0.007, 0.09, 10), MAT.metal, 0.05, pegYs[i], (i - 1) * 0.09);
     peg.rotation.z = Math.PI / 2;
     rack.add(peg);
   }
   g.add(rack);
+  b.extras.rack = rack;
 
   // three interchangeable brushes
   const makeBrush = (kind: "flat" | "dome" | "sponge") => {
@@ -165,11 +185,17 @@ export function buildSpinScrubber(): Build {
     b.extras[`brush${i}Home`] = new THREE.Object3D();
     b.extras[`brush${i}Park`] = new THREE.Object3D();
     b.extras[`brush${i}Home`].position.set(0, 0.0, 0);
-    b.extras[`brush${i}Park`].position.set(0.29, 0.16 - i * 0.09, (i - 1) * 0.1);
+    b.extras[`brush${i}Park`].position.set(-0.255, pegYs[i] - 0.05, -0.26 + (i - 1) * 0.09);
     part(b, br, [0, 0, 0]); // handled manually in scene
   });
 
-  b.spin.push({ obj: headHousing, speed: 0 }); // speed driven per-frame via extras
+  // full engineering explode: grip lifts, shaft telescopes, neck + head separate
+  part(b, gripG, [0, 0.36, 0]);
+  part(b, shaftG, [0, 0.18, 0]);
+  part(b, neckG, [0, 0.05, 0]);
+  part(b, headG, [0, -0.045, 0.06]);
+
+  b.spin.push({ obj: headG, speed: 0 }); // speed driven per-frame via extras
 
   anchor(b, "scrub-head", headHousing);
   return b;
@@ -247,42 +273,62 @@ export function buildCarVacuum(): Build {
   const b = newBuild();
   const g = b.group;
 
+  // main barrel held horizontal, nose forward (+x)
   const bodyG = new THREE.Group();
   bodyG.position.set(0, 0.085, 0);
-  const body = mesh(new THREE.CylinderGeometry(0.052, 0.06, 0.24, 24), MAT.white, 0, 0, 0);
-  body.rotation.z = Math.PI / 2;
-  const tail = mesh(new THREE.CylinderGeometry(0.045, 0.052, 0.05, 24), MAT.graphite, -0.13, 0, 0);
-  tail.rotation.z = Math.PI / 2;
-  const band = mesh(new THREE.CylinderGeometry(0.056, 0.056, 0.03, 24), MAT.accent, 0.05, 0, 0);
+  const barrel = mesh(new THREE.CapsuleGeometry(0.048, 0.17, 8, 24), MAT.white, 0, 0, 0);
+  barrel.rotation.z = Math.PI / 2;
+  const rearCap = mesh(
+    new THREE.SphereGeometry(0.048, 20, 14, 0, Math.PI * 2, 0, Math.PI / 2),
+    MAT.graphite,
+    -0.085,
+    0,
+    0
+  );
+  rearCap.rotation.z = Math.PI / 2;
+  const exhaust = mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.022, 24), MAT.darkSoft, -0.1, 0, 0);
+  exhaust.rotation.z = Math.PI / 2;
+  const band = mesh(new THREE.CylinderGeometry(0.0495, 0.0495, 0.024, 24), MAT.accent, -0.015, 0, 0);
   band.rotation.z = Math.PI / 2;
-  const handle = mesh(new THREE.TorusGeometry(0.045, 0.011, 10, 20, Math.PI), MAT.graphite, -0.02, 0.03, 0);
-  bodyG.add(body, tail, band, handle);
+  const rocker = mesh(new THREE.BoxGeometry(0.034, 0.012, 0.02), MAT.graphite, -0.045, 0.047, 0);
+  const handle = mesh(new THREE.TorusGeometry(0.052, 0.011, 10, 20, Math.PI), MAT.graphite, -0.02, 0.015, 0);
+  const nose = mesh(new THREE.CylinderGeometry(0.036, 0.048, 0.06, 24), MAT.plastic, 0.115, -0.012, 0);
+  nose.rotation.z = -Math.PI / 2;
+  bodyG.add(barrel, rearCap, exhaust, band, rocker, handle, nose);
   g.add(bodyG);
 
+  // clear dust cup under the nose, latch at front
   const cupG = new THREE.Group();
-  const cup = mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.07, 22), MAT.glass, 0.155, 0.085, 0, false);
-  cup.rotation.z = Math.PI / 2;
+  const cup = mesh(new THREE.CylinderGeometry(0.042, 0.046, 0.075, 22), MAT.glass, 0.115, -0.075, 0, false);
+  const cupCap = mesh(new THREE.CylinderGeometry(0.046, 0.042, 0.012, 22), MAT.graphite, 0.115, -0.118, 0, false);
+  const latch = mesh(new THREE.BoxGeometry(0.014, 0.022, 0.01), MAT.accent, 0.115, -0.052, 0.046, false);
+  cupG.add(cup, cupCap, latch);
   g.add(cupG);
 
+  // crevice nozzle angled forward-down
   const nozzleG = new THREE.Group();
-  const nozzle = mesh(new THREE.CylinderGeometry(0.009, 0.032, 0.12, 16), MAT.graphite, 0.25, 0.085, 0);
-  nozzle.rotation.z = -Math.PI / 2;
+  const nozzle = mesh(new THREE.CylinderGeometry(0.009, 0.033, 0.13, 18), MAT.graphite, 0, 0, 0);
+  const nozzleTip = mesh(new THREE.BoxGeometry(0.012, 0.016, 0.03), MAT.darkSoft, 0, -0.068, 0, false);
+  nozzleG.add(nozzle, nozzleTip);
+  nozzleG.position.set(0.185, 0.062, 0);
+  nozzleG.rotation.z = -Math.PI / 2 - 0.16;
   g.add(nozzleG);
 
-  // coiled 4.5m cord suggestion
+  // long 4.5m cord trailing back to a 12V plug
   const curve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(-0.16, 0.085, 0),
-    new THREE.Vector3(-0.3, 0.1, 0.12),
-    new THREE.Vector3(-0.46, 0.03, 0.26),
-    new THREE.Vector3(-0.64, 0.02, 0.12),
-    new THREE.Vector3(-0.7, 0.02, -0.14),
+    new THREE.Vector3(-0.125, 0.085, 0),
+    new THREE.Vector3(-0.26, 0.1, 0.15),
+    new THREE.Vector3(-0.42, 0.0, 0.3),
+    new THREE.Vector3(-0.6, -0.1, 0.22),
+    new THREE.Vector3(-0.68, -0.13, 0.0),
   ]);
-  const cord = new THREE.Mesh(new THREE.TubeGeometry(curve, 40, 0.0065, 8), MAT.cord);
+  const cord = new THREE.Mesh(new THREE.TubeGeometry(curve, 44, 0.006, 8), MAT.cord);
   cord.castShadow = true;
-  g.add(cord);
+  const plug = mesh(new THREE.CylinderGeometry(0.013, 0.013, 0.05, 12), MAT.graphite, -0.68, -0.16, 0);
+  const plugTip = mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.022, 10), MAT.metal, -0.685, -0.192, 0, false);
+  g.add(cord, plug, plugTip);
 
-  b.extras.nozzleTip = nozzle;
-  anchor(b, "car-body", body);
+  b.extras.nozzleTip = nozzleG;
   return b;
 }
 
@@ -429,7 +475,7 @@ export function buildEvoPump(): Build {
   part(b, shellG, [0, 0.19, -0.13]);
   part(b, flangeG, [0, 0.06, 0.2]);
   part(b, membraneG, [0, 0.12, 0.1]);
-  part(b, cupG, [0, -0.14, 0.13]);
+  part(b, cupG, [0, -0.02, 0.24]);
   part(b, unitG, [0, 0.02, -0.02]);
 
   anchor(b, "evo-shell", shell);
@@ -441,27 +487,98 @@ export function buildEvoPump(): Build {
   return b;
 }
 
-/* ================= SIMPLE SHELF MODELS ================= */
+/* ================= BP-111 WEARABLE PUMP ================= */
 
-export function buildPumpSimple(kind: "box" | "puck"): Build {
+export function buildBP111(): Build {
   const b = newBuild();
   const g = b.group;
-  if (kind === "box") {
-    const body = mesh(new THREE.BoxGeometry(0.09, 0.13, 0.055), MAT.white, 0, 0.065, 0);
-    const screen = mesh(new THREE.BoxGeometry(0.04, 0.02, 0.006), MAT.graphite, 0, 0.11, 0.028, false);
-    const cup = mesh(new THREE.CylinderGeometry(0.034, 0.04, 0.05, 22), MAT.glass, 0, 0.045, 0.045, false);
-    cup.rotation.x = Math.PI / 2;
-    const dot = mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.006, 10), MAT.accent, 0, 0.075, 0.03, false);
-    dot.rotation.x = Math.PI / 2;
-    g.add(body, screen, cup, dot);
-  } else {
-    const body = mesh(new THREE.SphereGeometry(0.055, 26, 18), MAT.white, 0, 0.05, 0);
-    body.scale.set(1, 0.8, 0.6);
-    const cup = mesh(new THREE.CylinderGeometry(0.036, 0.041, 0.05, 22), MAT.glass, 0, 0.012, 0.035, false);
-    cup.rotation.x = 0.35;
-    const dot = mesh(new THREE.CylinderGeometry(0.007, 0.007, 0.005, 10), MAT.accent, 0, 0.075, -0.03, false);
-    dot.rotation.x = Math.PI / 2;
-    g.add(body, cup, dot);
-  }
+
+  const bodyG = new THREE.Group();
+  const body = mesh(new THREE.BoxGeometry(0.088, 0.125, 0.05), MAT.white, 0, 0.0625, 0);
+  const cap = mesh(new THREE.CylinderGeometry(0.031, 0.031, 0.052, 20), MAT.white, 0, 0.125, 0);
+  cap.rotation.x = Math.PI / 2;
+  const screen = mesh(new THREE.BoxGeometry(0.044, 0.028, 0.004), MAT.graphite, 0, 0.095, 0.026, false);
+  const screenGlow = mesh(new THREE.BoxGeometry(0.036, 0.02, 0.002), MAT.strip, 0, 0.095, 0.0285, false);
+  const dot = mesh(new THREE.CylinderGeometry(0.007, 0.007, 0.005, 10), MAT.accent, 0, 0.052, 0.027, false);
+  dot.rotation.x = Math.PI / 2;
+  bodyG.add(body, cap, screen, screenGlow, dot);
+  g.add(bodyG);
+
+  const cupG = new THREE.Group();
+  const cup = mesh(new THREE.CylinderGeometry(0.034, 0.039, 0.055, 22), MAT.glass, 0, 0.03, 0.048, false);
+  cup.rotation.x = 0.5;
+  const cupBase = mesh(new THREE.CylinderGeometry(0.036, 0.034, 0.008, 22), MAT.plastic, 0, 0.002, 0.034, false);
+  cupBase.rotation.x = 0.5;
+  cupG.add(cup, cupBase);
+  g.add(cupG);
+
+  const strap = mesh(new THREE.TorusGeometry(0.02, 0.004, 8, 16), MAT.plastic, 0, 0.152, 0, false);
+  g.add(strap);
+
   return b;
+}
+
+/* ================= BP-222 WEARABLE PUMP ================= */
+
+export function buildBP222(): Build {
+  const b = newBuild();
+  const g = b.group;
+
+  const body = mesh(new THREE.SphereGeometry(0.055, 26, 18), MAT.white, 0, 0.05, 0);
+  body.scale.set(1, 0.8, 0.62);
+  const band = mesh(new THREE.TorusGeometry(0.046, 0.006, 8, 24), MAT.graphite, 0, 0.05, 0);
+  band.rotation.x = Math.PI / 2;
+  const cup = mesh(new THREE.CylinderGeometry(0.036, 0.041, 0.05, 22), MAT.glass, 0, 0.012, 0.04, false);
+  cup.rotation.x = 0.4;
+  const cupBase = mesh(new THREE.CylinderGeometry(0.038, 0.036, 0.007, 22), MAT.plastic, 0, -0.012, 0.03, false);
+  cupBase.rotation.x = 0.4;
+  const dot = mesh(new THREE.CylinderGeometry(0.007, 0.007, 0.005, 10), MAT.accent, 0, 0.078, -0.028, false);
+  dot.rotation.x = Math.PI / 2;
+  g.add(body, band, cup, cupBase, dot);
+
+  return b;
+}
+
+/* ================= SHIRT ON HANGER (steamer zone) ================= */
+
+export function buildShirtOnHanger(): { group: THREE.Group; shirt: THREE.Mesh } {
+  const group = new THREE.Group();
+
+  // T-shirt silhouette, origin at hem centre, height 0.62
+  const s = new THREE.Shape();
+  s.moveTo(-0.16, 0);
+  s.lineTo(-0.16, 0.4);
+  s.lineTo(-0.245, 0.355);
+  s.lineTo(-0.27, 0.5);
+  s.lineTo(-0.17, 0.575);
+  s.lineTo(-0.075, 0.6);
+  s.quadraticCurveTo(0, 0.54, 0.075, 0.6);
+  s.lineTo(0.17, 0.575);
+  s.lineTo(0.27, 0.5);
+  s.lineTo(0.245, 0.355);
+  s.lineTo(0.16, 0.4);
+  s.lineTo(0.16, 0);
+  const geo = new THREE.ShapeGeometry(s, 18);
+  const shirt = new THREE.Mesh(geo, MAT.fabric);
+  shirt.castShadow = true;
+  group.add(shirt);
+
+  // wire hanger: hook over the rail + shoulder triangle
+  const hookPath = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0, 0.615, 0),
+    new THREE.Vector3(0.014, 0.665, 0),
+    new THREE.Vector3(-0.014, 0.7, 0),
+  ]);
+  const hook = new THREE.Mesh(new THREE.TubeGeometry(hookPath, 12, 0.0035, 8), MAT.darkMetal);
+  const triPath = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-0.16, 0.56, 0),
+    new THREE.Vector3(0, 0.645, 0),
+    new THREE.Vector3(0.16, 0.56, 0),
+  ]);
+  const tri = new THREE.Mesh(new THREE.TubeGeometry(triPath, 16, 0.0035, 8), MAT.darkMetal);
+  hook.castShadow = true;
+  tri.castShadow = true;
+  group.add(hook, tri);
+
+  return { group, shirt };
 }
